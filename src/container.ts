@@ -176,6 +176,7 @@ function handleDrop({ element, draggables, layout, getOptions }: ContainerProps)
 }
 
 function getContainerProps(element: HTMLElement, getOptions: () => ContainerOptions): ContainerProps {
+  // 包裹后的可拖动元素
   const draggables = wrapChildren(element);
   const options = getOptions();
   // set flex classes before layout is inited for scroll listener
@@ -300,7 +301,7 @@ function getShadowBeginEndForDropZone({ layout }: ContainerProps) {
 function drawDropPlaceholder({ layout, element, getOptions }: ContainerProps) {
   let prevAddedIndex: number | null = null;
   return ({ dragResult: { elementSize, shadowBeginEnd, addedIndex, dropPlaceholderContainer } }: DragInfo) => {
-    const options = getOptions();    
+    const options = getOptions();
     if (options.dropPlaceholder) {
       const { animationDuration, className, showOnTop } = typeof options.dropPlaceholder === 'boolean' ? {} as any as DropPlaceholderOptions : options.dropPlaceholder as DropPlaceholderOptions;
       if (addedIndex !== null) {
@@ -660,15 +661,21 @@ function compose(params: any) {
   };
 }
 
-// Container definition begin
+// 容器定义
 function Container(element: HTMLElement): (options?: ContainerOptions) => IContainer {
+
   return function (options?: ContainerOptions): IContainer {
+    // 合并配置项
     let containerOptions = Object.assign({}, defaultOptions, options);
+
     let dragResult: DragResult | null = null;
     let lastDraggableInfo: DraggableInfo | null = null;
+
     const props = getContainerProps(element, getOptions);
+
     let dragHandler = getDragHandler(props);
     let dropHandler = handleDrop(props);
+
     let scrollListener = listenScrollParent(element, onScroll);
 
     function processLastDraggableInfo() {
@@ -738,7 +745,7 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
         if (dragResult && dragResult.dropPlaceholderContainer) {
           element.removeChild(dragResult.dropPlaceholderContainer);
         }
-        lastDraggableInfo = null;       
+        lastDraggableInfo = null;
         dragHandler = getDragHandler(props);
         dropHandler(draggableInfo, dragResult!);
         dragResult = null;
@@ -777,21 +784,25 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
 // exported part of container
 const smoothDnD: SmoothDnDCreator = function (element: HTMLElement, options?: ContainerOptions): SmoothDnD {
   const containerIniter = Container(element);
+
   const container = containerIniter(options);
   (element as ElementX)[containerInstance] = container;
   Mediator.register(container);
+
   return {
+
     dispose() {
       Mediator.unregister(container);
       container.dispose(container);
     },
+
     setOptions(options: ContainerOptions, merge?: boolean) {
       container.setOptions(options, merge);
     }
   };
 };
 
-// wrap all draggables by default 
+// 默认包裹所有可拖动元素
 // in react,vue,angular this value will be set to false
 smoothDnD.wrapChild = true;
 smoothDnD.cancelDrag = function () {
