@@ -28,6 +28,7 @@ export const getIntersectionOnAxis = (rect1: Rect, rect2: Rect, axis: Axis) => {
   }
 };
 
+// 计算理论上的Container 区域大小，包含隐藏的区域
 export const getContainerRect = (element: HTMLElement): Rect => {
   const _rect = element.getBoundingClientRect();
   const rect = {
@@ -37,6 +38,7 @@ export const getContainerRect = (element: HTMLElement): Rect => {
     bottom: _rect.bottom,
   };
 
+  // 子元素的宽度/高度是否超过容器的宽度和高度， 并且没有滚动
   if (hasBiggerChild(element, 'x') && !isScrollingOrHidden(element, 'x')) {
     const width = rect.right - rect.left;
     rect.right = rect.right + element.scrollWidth - width;
@@ -76,11 +78,22 @@ export const isScrolling = (element: HTMLElement, axis: Axis) => {
 };
 
 export const isScrollingOrHidden = (element: HTMLElement, axis: Axis) => {
+  // 获取元素样式
   const style = window.getComputedStyle(element);
+
   const overflow = style['overflow'];
   const overFlowAxis = style[`overflow-${axis}` as any];
-  const general = overflow === 'auto' || overflow === 'scroll' || overflow === 'hidden';
-  const dimensionScroll = overFlowAxis === 'auto' || overFlowAxis === 'scroll' || overFlowAxis === 'hidden';
+
+  const general =
+    overflow === 'auto' ||
+    overflow === 'scroll' ||
+    overflow === 'hidden';
+
+  const dimensionScroll =
+    overFlowAxis === 'auto' ||
+    overFlowAxis === 'scroll' ||
+    overFlowAxis === 'hidden';
+
   return general || dimensionScroll;
 };
 
@@ -98,8 +111,13 @@ export const hasScrollBar = (element: HTMLElement, axis: Axis) => {
 
 export const getVisibleRect = (element: HTMLElement, elementRect: Rect) => {
   let currentElement = element;
+
+  // 计算之后的容器区域大小
   let rect = elementRect || getContainerRect(element);
+
+  // 如果有父节点，需要计算父节点区域，比较父节点大小和子节点大小，取最小值
   currentElement = element.parentElement!;
+
   while (currentElement) {
     if (hasBiggerChild(currentElement, 'x') && isScrollingOrHidden(currentElement, 'x')) {
       rect = getIntersectionOnAxis(rect, currentElement.getBoundingClientRect(), 'x');

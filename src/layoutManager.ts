@@ -55,37 +55,57 @@ function orientationDependentProps(map: PropMap) {
 
 
 
-export default function layoutManager(containerElement: ElementX, orientation: Orientation, _animationDuration: number): LayoutManager {
+export default function layoutManager(
+	containerElement: ElementX,
+	orientation: Orientation,
+	_animationDuration: number
+): LayoutManager {
+	// extraSizeForInsertion smooth-dnd-extra-size-for-insertion
 	containerElement[extraSizeForInsertion] = 0;
+
+	// 样式映射
 	const map = orientation === 'horizontal' ? horizontalMap : verticalMap;
+
 	const propMapper = orientationDependentProps(map);
+
 	const values: Dictionary = {
 		translation: 0
 	};
 
 	window.addEventListener('resize', function () {
+		// 需要重新计算有效区域
 		invalidateContainerRectangles(containerElement);
 	});
 
+	// TODO 为什么需要重新计算
 	setTimeout(() => {
 		invalidate();
 	}, 10);
+
 
 	function invalidate() {
 		invalidateContainerRectangles(containerElement);
 		invalidateContainerScale(containerElement);
 	}
 
+	// 需要重新计算容器有效区域
 	function invalidateContainerRectangles(containerElement: ElementX) {
+		// 获取 容器区域
 		values.rect = Utils.getContainerRect(containerElement);
+
+		// 可见区域
 		const visibleRect = Utils.getVisibleRect(containerElement, values.rect);
+
+		// 区域是否可见
 		if (Utils.isVisible(visibleRect)) {
 			values.lastVisibleRect = values.visibleRect;
 		}
 
+		// 重新计算有效区域
 		values.visibleRect = visibleRect;
 	}
 
+	// 重新计算 缩放比例
 	function invalidateContainerScale(containerElement: ElementX) {
 		const rect = containerElement.getBoundingClientRect();
 		values.scaleX = containerElement.offsetWidth ? ((rect.right - rect.left) / containerElement.offsetWidth) : 1;

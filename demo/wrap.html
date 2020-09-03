@@ -1,0 +1,96 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>呵呵</title>
+    <style>
+        .smooth-dnd-draggable-wrapper {
+            border: 1px solid red;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="container">
+        <div class="draggable">哈哈哈</div>
+        <div class="draggable">哈哈哈</div>
+        <div class="draggable">哈哈哈</div>
+    </div>
+</body>
+<script>
+    const wrapperClass = 'smooth-dnd-draggable-wrapper';
+
+    const hasClass = (element, cls) => {
+        return (
+            element.className
+            .split(' ')
+            .map(p => p)
+            .indexOf(cls) > -1
+        );
+    };
+
+    function wrapChild(child) {
+        const div = window.document.createElement('div')
+        div.className = `${wrapperClass}`
+
+        console.log('child.parentElement:', child.parentElement)
+
+        if (child.parentElement) {
+            // insertBefore(newNode, existNode) 在已有知道
+            child.parentElement.insertBefore(div, child)
+        }
+        // 移动元素到新创建的div中
+        div.appendChild(child)
+        return div
+    }
+
+    function wrapChildren(element) {
+        const draggables = [];
+        console.log('element.children:', element.children)
+        Array.prototype.forEach.call(element.children, (child) => {
+
+            // node 可能是文字内容，CDATA段，元素、属性等，具体是什么，可以通过node.nodeType判断
+            // Node.ELEMENT_NODE 表示元素节点类型
+
+            // 如果当前节点是元素节点类型
+            if (child.nodeType === Node.ELEMENT_NODE) {
+                let wrapper = child;
+                // 用 wrapperClass 样式包裹元素
+                if (!hasClass(child, wrapperClass)) {
+                    wrapper = wrapChild(child);
+                }
+                // wrapper[translationValue] = 0;
+
+                draggables.push(wrapper);
+            } else {
+                element.removeChild(child);
+            }
+        });
+        return draggables;
+    }
+
+    function unwrapChildren(element) {
+        Array.prototype.forEach.call(element.children, (child) => {
+
+            if (child.nodeType === Node.ELEMENT_NODE) {
+                // 插入节点数据
+                if (hasClass(child, wrapperClass)) {
+                    // 在 child 第一个子元素之前插入 child 后，删除 child 元素
+                    console.log('child.firstElementChild:', child.firstElementChild)
+                    element.insertBefore(child.firstElementChild, child);
+                    element.removeChild(child);
+                }
+            }
+        });
+    }
+    const container = document.querySelector('.container')
+    wrapChildren(container)
+
+    setTimeout(() => {
+        unwrapChildren(container)
+    }, 3000)
+</script>
+
+
+</html>

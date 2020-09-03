@@ -7,7 +7,11 @@ import layoutManager from './layoutManager';
 import Mediator from './mediator';
 import { addClass, getParent, getParentRelevantContainerElement, hasClass, listenScrollParent, removeClass } from './utils';
 
-function setAnimation(element: HTMLElement, add: boolean, animationDuration = defaultOptions.animationDuration) {
+function setAnimation(
+  element: HTMLElement,
+  add: boolean,
+  animationDuration = defaultOptions.animationDuration
+  ) {
   if (add) {
     addClass(element, animationClass);
     element.style.transitionDuration = animationDuration + 'ms';
@@ -17,6 +21,7 @@ function setAnimation(element: HTMLElement, add: boolean, animationDuration = de
   }
 }
 
+// 拖拽相关
 function isDragRelevant({ element, getOptions }: ContainerProps) {
   return function (sourceContainer: IContainer, payload: any) {
     const options = getOptions();
@@ -25,25 +30,36 @@ function isDragRelevant({ element, getOptions }: ContainerProps) {
       return options.shouldAcceptDrop(sourceContainer.getOptions(), payload);
     }
     const sourceOptions = sourceContainer.getOptions();
-    if (options.behaviour === 'copy') return false;
+    if (options.behaviour === 'copy')
+    return false;
 
     const parentWrapper = getParent(element, '.' + wrapperClass);
+    // 同一个区域拖拽
     if (parentWrapper === sourceContainer.element) {
       return false;
     }
 
-    if (sourceContainer.element === element) return true;
-    if (sourceOptions.groupName && sourceOptions.groupName === options.groupName) return true;
+    if (sourceContainer.element === element)
+    return true;
+    if (sourceOptions.groupName && sourceOptions.groupName === options.groupName)
+    return true;
 
     return false;
   };
 }
 
+// 包裹元素节点
 function wrapChild(child: HTMLElement) {
   if (smoothDnD.wrapChild) {
     const div = window.document.createElement('div');
     div.className = `${wrapperClass}`;
+    // ！ts新属性
+    // 在 child之前插入一个div，这个div只能够 appendChild 一个 child
+
+    // insertBefore(newNode, existNode) 在已有的子节点之前插入新的节点
     child.parentElement!.insertBefore(div, child);
+
+    // 移动节点 child 位 div的子节点
     div.appendChild(child);
     return div;
   }
@@ -51,15 +67,23 @@ function wrapChild(child: HTMLElement) {
   return child;
 }
 
+// 包裹每个元素节点，返回包裹之后的元素节点
 function wrapChildren(element: HTMLElement) {
   const draggables: ElementX[] = [];
   Array.prototype.forEach.call(element.children, (child: ElementX) => {
+
+    // node 可能是文字内容，CDATA段，元素、属性等，具体是什么，可以通过node.nodeType判断
+    // Node.ELEMENT_NODE 表示元素节点类型
+
+    // 如果当前节点是元素节点类型
     if (child.nodeType === Node.ELEMENT_NODE) {
       let wrapper = child;
+      // 用 wrapperClass 样式包裹元素
       if (!hasClass(child, wrapperClass)) {
         wrapper = wrapChild(child);
       }
       wrapper[translationValue] = 0;
+
       draggables.push(wrapper);
     } else {
       element.removeChild(child);
@@ -71,9 +95,13 @@ function wrapChildren(element: HTMLElement) {
 function unwrapChildren(element: HTMLElement) {
   if (smoothDnD.wrapChild) {
     Array.prototype.forEach.call(element.children, (child: HTMLElement) => {
+
       if (child.nodeType === Node.ELEMENT_NODE) {
+        // 插入节点数据
         if (hasClass(child, wrapperClass)) {
+          // 在 child 第一个子元素之前插入 child 之前，删除 child 元素
           element.insertBefore(child.firstElementChild as HTMLElement, child);
+
           element.removeChild(child);
         }
       }
@@ -82,6 +110,7 @@ function unwrapChildren(element: HTMLElement) {
 }
 
 function findDraggebleAtPos({ layout }: { layout: LayoutManager }) {
+
   const find = (
     draggables: HTMLElement[],
     pos: number,
@@ -131,6 +160,7 @@ function findDraggebleAtPos({ layout }: { layout: LayoutManager }) {
 function resetDraggables({ element, draggables, layout }: ContainerProps) {
   return function () {
     draggables.forEach((p: ElementX) => {
+      // 取消动画
       setAnimation(p, false);
       layout.setTranslation(p, 0);
       layout.setVisibility(p, true);
@@ -179,9 +209,11 @@ function getContainerProps(element: HTMLElement, getOptions: () => ContainerOpti
   // 包裹后的可拖动元素
   const draggables = wrapChildren(element);
   const options = getOptions();
-  // set flex classes before layout is inited for scroll listener
+  // 给拖拽区域添加样式
   addClass(element, `${containerClass} ${options.orientation}`);
+
   const layout = layoutManager(element, options.orientation!, options.animationDuration!);
+
   return {
     element,
     draggables,
@@ -302,9 +334,16 @@ function drawDropPlaceholder({ layout, element, getOptions }: ContainerProps) {
   let prevAddedIndex: number | null = null;
   return ({ dragResult: { elementSize, shadowBeginEnd, addedIndex, dropPlaceholderContainer } }: DragInfo) => {
     const options = getOptions();
+
     if (options.dropPlaceholder) {
-      const { animationDuration, className, showOnTop } = typeof options.dropPlaceholder === 'boolean' ? {} as any as DropPlaceholderOptions : options.dropPlaceholder as DropPlaceholderOptions;
+      const {
+        animationDuration,
+        className,
+        showOnTop
+      } = typeof options.dropPlaceholder === 'boolean' ? {} as any as DropPlaceholderOptions : options.dropPlaceholder as DropPlaceholderOptions;
+
       if (addedIndex !== null) {
+
         if (!dropPlaceholderContainer) {
           const innerElement = document.createElement('div');
           const flex = document.createElement('div');
@@ -697,12 +736,17 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
       }
     }
 
+    // 预置位
     function prepareDrag(container: IContainer, relevantContainers: IContainer[]) {
       const element = container.element;
       const draggables = props.draggables;
       setDraggables(draggables, element);
+      // 计算预置位的区域
       container.layout.invalidateRects();
+      // 每个拖拽的元素执行一个动画，用于给预置位腾出位置
       draggables.forEach(p => setAnimation(p, true, getOptions().animationDuration));
+
+      // 滚动监听
       scrollListener.start();
     }
 
@@ -735,6 +779,7 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
       layout: props.layout,
       dispose,
       prepareDrag,
+
       handleDrag(draggableInfo: DraggableInfo) {
         lastDraggableInfo = draggableInfo;
         dragResult = dragHandler(draggableInfo);
@@ -783,16 +828,19 @@ function Container(element: HTMLElement): (options?: ContainerOptions) => IConta
 
 // exported part of container
 const smoothDnD: SmoothDnDCreator = function (element: HTMLElement, options?: ContainerOptions): SmoothDnD {
+  // 包裹拖拽的区域
   const containerIniter = Container(element);
 
   const container = containerIniter(options);
   (element as ElementX)[containerInstance] = container;
+
+  // 注册配置项
   Mediator.register(container);
 
   return {
-
     dispose() {
       Mediator.unregister(container);
+      // 重新部署
       container.dispose(container);
     },
 

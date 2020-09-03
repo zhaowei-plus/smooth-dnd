@@ -16,7 +16,7 @@ function delegateProperty(from: any, to:any, propName: string) {
     })
 }
 
-// depreceted 废弃，不推荐使用的
+// depreceted 表示废弃，不推荐使用的
 const deprecetedDefaultExport: SmoothDnDCreator = function(element: ElementX, options?: ContainerOptions) {
     console.log('deprecetedDefaultExport:', element, options)
     console.warn('default export is deprecated. please use named export "smoothDnD"');
